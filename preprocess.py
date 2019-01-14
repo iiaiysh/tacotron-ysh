@@ -15,7 +15,7 @@ def preprocess_blizzard(args):
 
 
 def preprocess_ljspeech(args):
-  in_dir = os.path.join(args.base_dir, 'LJSpeech-1.1')
+  in_dir = os.path.join(args.base_dir)
   out_dir = os.path.join(args.base_dir, args.output)
   os.makedirs(out_dir, exist_ok=True)
   metadata = ljspeech.build_from_path(in_dir, out_dir, args.num_workers, tqdm=tqdm)
@@ -35,9 +35,9 @@ def write_metadata(metadata, out_dir):
 
 def main():
   parser = argparse.ArgumentParser()
-  parser.add_argument('--base_dir', default=os.path.expanduser('.'))
+  parser.add_argument('--base_dir', required=True)
   parser.add_argument('--output', default='training')
-  parser.add_argument('--dataset', required=True, choices=['blizzard', 'ljspeech'])
+  parser.add_argument('--dataset',default='ljspeech')
   parser.add_argument('--num_workers', type=int, default=cpu_count())
   args = parser.parse_args()
   if args.dataset == 'blizzard':

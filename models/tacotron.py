@@ -97,16 +97,16 @@ class Tacotron():
       self.mel_targets = mel_targets
       self.linear_targets = linear_targets
       self.stop_token_targets = stop_token_targets
+      self.alignimage = tf.expand_dims(tf.expand_dims(alignments[0], 0),-1)
       log('Initialized Tacotron model. Dimensions: ')
-      log('  embedding:               {}'.format(embedded_inputs.shape))
-      log('  prenet out:              {}'.format(prenet_outputs.shape))
-      log('  encoder out:             {}'.format(encoder_outputs.shape))
-      log('  decoder out (r frames):  {}'.format(decoder_outputs.shape))
-      log('  decoder out (1 frame):   {}'.format(mel_outputs.shape))
-      log('  postnet out:             {}'.format(post_outputs.shape))
-      log('  linear out:              {}'.format(linear_outputs.shape))
-      log('  stop token:              {}'.format(stop_token_outputs.shape))
-
+#      log('  embedding:               {}'.format(embedded_inputs.shape))
+#      log('  prenet out:              {}'.format(prenet_outputs.shape))
+#      log('  encoder out:             {}'.format(encoder_outputs.shape))
+#      log('  decoder out (r frames):  {}'.format(decoder_outputs.shape))
+#      log('  decoder out (1 frame):   {}'.format(mel_outputs.shape))
+#      log('  postnet out:             {}'.format(post_outputs.shape))
+#      log('  linear out:              {}'.format(linear_outputs.shape))
+#      log('  stop token:              {}'.format(stop_token_outputs.shape))
 
   def add_loss(self):
     '''Adds loss to the model. Sets "loss" field. initialize must have been called.'''
