@@ -16,6 +16,8 @@ from util import audio, infolog, plot, ValueWindow
 log = infolog.log
 
 import GPUtil
+from synthesizer import Synthesizer
+import re
 
 def get_git_commit():
   subprocess.check_output(['git', 'diff-index', '--quiet', 'HEAD'])   # Verify client is clean
@@ -23,6 +25,23 @@ def get_git_commit():
   log('Git commit: %s' % commit)
   return commit
 
+def get_output_base_path(checkpoint_path):
+  base_dir = os.path.dirname(checkpoint_path)
+  m = re.compile(r'.*?\.ckpt\-([0-9]+)').match(checkpoint_path)
+  name = 'step-%d-audio-eval' % int(m.group(1)) if m else 'eval'
+  return os.path.join(base_dir, name)
+        
+        
+def run_eval(synthesizer,checkpoint,texts):
+  # print(hparams_debug_string())
+  synthesizer.load(checkpoint,reuse=True)
+  base_path = get_output_base_path(checkpoint)
+  for i, text in enumerate(texts):
+    path = '%s.wav' % (base_path)
+    print('Synthesizing: %s' % path)
+    with open(path, 'wb') as f:
+      f.write(synthesizer.synthesize(text))
+  #del synthesizer
 
 def add_stats(model):
   with tf.variable_scope('stats') as scope:
@@ -48,6 +67,8 @@ def time_string():
 
 
 def train(log_dir, args):
+  synthesizer = Synthesizer()
+
   commit = get_git_commit() if args.git else 'None'
   checkpoint_path = os.path.join(log_dir, 'model.ckpt')
   input_path = os.path.join(args.base_dir, args.input)
@@ -76,12 +97,18 @@ def train(log_dir, args):
   loss_window = ValueWindow(100)
   saver = tf.train.Saver(max_to_keep=5, keep_checkpoint_every_n_hours=2)
 
+  
+  print('gpu before train:',GPUtil.getGPUs()[0].memoryUtil)
   # Train!
-  with tf.Session() as sess:
+  config = tf.ConfigProto()
+  # config.gpu_options.per_process_gpu_memory_fraction = 0.4
+
+  with tf.Session(config=config) as sess:
     try:
       summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
       sess.run(tf.global_variables_initializer())
-
+      print('gpu after variables initial',GPUtil.getGPUs()[0].memoryUtil)
+      
       if args.restore_step:
         # Restore from a checkpoint if the user requested it.
         checkpoint_state = tf.train.get_checkpoint_state(log_dir)
@@ -93,10 +120,13 @@ def train(log_dir, args):
         log('Starting new training run at commit: %s' % commit, slack=True)
 
       feeder.start_in_session(sess)
+      print('gpu after feeder',GPUtil.getGPUs()[0].memoryUtil)
 
       while not coord.should_stop():
         start_time = time.time()
         step, loss, opt = sess.run([global_step, model.loss, model.optimize])
+        print('gpu after step',GPUtil.getGPUs()[0].memoryUtil)
+
         time_window.append(time.time() - start_time)
         loss_window.append(loss)
         message = 'Step %-7d [%.03f sec/step, loss=%.05f, avg_loss=%.05f]' % (
@@ -118,7 +148,12 @@ def train(log_dir, args):
           input_seq, spectrogram, alignment = sess.run([
             model.inputs[0], model.linear_outputs[0], model.alignments[0]])
           waveform = audio.inv_spectrogram(spectrogram.T)
-          audio.save_wav(waveform, os.path.join(log_dir, 'step-%d-audio.wav' % step))
+          audio.save_wav(waveform, os.path.join(log_dir, 'step-%d-audio-train.wav' % step))
+          
+          print('gpu before eval',GPUtil.getGPUs()[0].memoryUtil)
+          run_eval(synthesizer, '%s-%d' % (checkpoint_path, step), texts = [sequence_to_text(input_seq)])
+          print('gpu after eval',GPUtil.getGPUs()[0].memoryUtil)
+          
           plot.plot_alignment(alignment, os.path.join(log_dir, 'step-%d-align.png' % step),
             info='%s, %s, %s, step=%d, loss=%.5f' % (args.model, commit, time_string(), step, loss))
           log('Input: %s' % sequence_to_text(input_seq))
