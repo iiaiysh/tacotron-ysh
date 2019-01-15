@@ -67,7 +67,7 @@ def time_string():
 
 
 def train(log_dir, args):
-  synthesizer = Synthesizer()
+  
 
   commit = get_git_commit() if args.git else 'None'
   checkpoint_path = os.path.join(log_dir, 'model.ckpt')
@@ -98,16 +98,17 @@ def train(log_dir, args):
   saver = tf.train.Saver(max_to_keep=5, keep_checkpoint_every_n_hours=2)
 
   
-  print('gpu before train:',GPUtil.getGPUs()[0].memoryUtil)
+  #print('gpu before train:',GPUtil.getGPUs()[0].memoryUtil)
   # Train!
   config = tf.ConfigProto()
   # config.gpu_options.per_process_gpu_memory_fraction = 0.4
-
+  
+  synthesizer = Synthesizer(reuse=True)
   with tf.Session(config=config) as sess:
     try:
       summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
       sess.run(tf.global_variables_initializer())
-      print('gpu after variables initial',GPUtil.getGPUs()[0].memoryUtil)
+      #print('gpu after variables initial',GPUtil.getGPUs()[0].memoryUtil)
       
       if args.restore_step:
         # Restore from a checkpoint if the user requested it.
@@ -120,12 +121,12 @@ def train(log_dir, args):
         log('Starting new training run at commit: %s' % commit, slack=True)
 
       feeder.start_in_session(sess)
-      print('gpu after feeder',GPUtil.getGPUs()[0].memoryUtil)
+      #print('gpu after feeder',GPUtil.getGPUs()[0].memoryUtil)
 
       while not coord.should_stop():
         start_time = time.time()
         step, loss, opt = sess.run([global_step, model.loss, model.optimize])
-        print('gpu after step',GPUtil.getGPUs()[0].memoryUtil)
+        #print('gpu after step',GPUtil.getGPUs()[0].memoryUtil)
 
         time_window.append(time.time() - start_time)
         loss_window.append(loss)
@@ -150,9 +151,9 @@ def train(log_dir, args):
           waveform = audio.inv_spectrogram(spectrogram.T)
           audio.save_wav(waveform, os.path.join(log_dir, 'step-%d-audio-train.wav' % step))
           
-          print('gpu before eval',GPUtil.getGPUs()[0].memoryUtil)
+          #print('gpu before eval',GPUtil.getGPUs()[0].memoryUtil)
           run_eval(synthesizer, '%s-%d' % (checkpoint_path, step), texts = [sequence_to_text(input_seq)])
-          print('gpu after eval',GPUtil.getGPUs()[0].memoryUtil)
+          #print('gpu after eval',GPUtil.getGPUs()[0].memoryUtil)
           
           plot.plot_alignment(alignment, os.path.join(log_dir, 'step-%d-align.png' % step),
             info='%s, %s, %s, step=%d, loss=%.5f' % (args.model, commit, time_string(), step, loss))
@@ -173,9 +174,9 @@ def main():
   parser.add_argument('--hparams', default='',
     help='Hyperparameter overrides as a comma-separated list of name=value pairs')
   parser.add_argument('--restore_step', type=bool, default=True, help='Global step to restore from checkpoint.')
-  parser.add_argument('--summary_interval', type=int, default=1,
+  parser.add_argument('--summary_interval', type=int, default=100,
     help='Steps between running summary ops.')
-  parser.add_argument('--checkpoint_interval', type=int, default=1,
+  parser.add_argument('--checkpoint_interval', type=int, default=1000,
     help='Steps between writing checkpoints.')
   parser.add_argument('--slack_url', help='Slack webhook URL to get periodic reports.')
   parser.add_argument('--tf_log_level', type=int, default=1, help='Tensorflow C++ log level.')

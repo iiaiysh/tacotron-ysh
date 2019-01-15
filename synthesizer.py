@@ -9,7 +9,7 @@ from util import audio
 
 
 class Synthesizer:
-  def load(self, checkpoint_path, model_name='tacotron',reuse=False):
+  def __init__(self,model_name='tacotron',reuse=False):
     print('Constructing model: %s' % model_name)
     inputs = tf.placeholder(tf.int32, [1, None], 'inputs')
     input_lengths = tf.placeholder(tf.int32, [1], 'input_lengths')
@@ -18,6 +18,7 @@ class Synthesizer:
       self.model.initialize(inputs, input_lengths)
       self.wav_output = audio.inv_spectrogram_tensorflow(self.model.linear_outputs[0])
 
+  def load(self, checkpoint_path):
     print('Loading checkpoint: %s' % checkpoint_path)
     self.session = tf.Session()
     self.session.run(tf.global_variables_initializer())
