@@ -34,7 +34,7 @@ def get_output_base_path(checkpoint_path):
         
 def run_eval(synthesizer,checkpoint,texts):
   # print(hparams_debug_string())
-  synthesizer.load(checkpoint,reuse=True)
+  synthesizer.load(checkpoint)
   base_path = get_output_base_path(checkpoint)
   for i, text in enumerate(texts):
     path = '%s.wav' % (base_path)
@@ -95,7 +95,8 @@ def train(log_dir, args):
   step = 0
   time_window = ValueWindow(100)
   loss_window = ValueWindow(100)
-  saver = tf.train.Saver(max_to_keep=5, keep_checkpoint_every_n_hours=2)
+  # saver = tf.train.Saver(max_to_keep=5, keep_checkpoint_every_n_hours=2)
+  saver = tf.train.Saver(max_to_keep=None)
 
   
   #print('gpu before train:',GPUtil.getGPUs()[0].memoryUtil)
