@@ -13,13 +13,14 @@ class Synthesizer:
     print('Constructing model: %s' % model_name)
     inputs = tf.placeholder(tf.int32, [1, None], 'inputs')
     input_lengths = tf.placeholder(tf.int32, [1], 'input_lengths')
+    filenams = tf.placeholder(tf.string, [1], 'filenams')
     with tf.variable_scope('model',reuse=reuse) as scope:
       self.model = create_model(model_name, hparams)
-      self.model.initialize(inputs, input_lengths)
+      self.model.initialize(inputs, input_lengths, filenams)
       self.wav_output = audio.inv_spectrogram_tensorflow(self.model.linear_outputs[0])
 
   def load(self, checkpoint_path):
-    print('Loading checkpoint: %s' % checkpoint_path)
+    print('   Loading checkpoint: %s' % checkpoint_path)
     self.session = tf.Session()
     self.session.run(tf.global_variables_initializer())
     saver = tf.train.Saver()

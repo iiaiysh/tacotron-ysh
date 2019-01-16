@@ -39,18 +39,20 @@ class DataFeeder(threading.Thread):
       tf.placeholder(tf.int32, [None], 'input_lengths'),
       tf.placeholder(tf.float32, [None, None, hparams.num_mels], 'mel_targets'),
       tf.placeholder(tf.float32, [None, None, hparams.num_freq], 'linear_targets'),
-      tf.placeholder(tf.float32, [None, None], 'stop_token_targets')
+      tf.placeholder(tf.float32, [None, None], 'stop_token_targets'),
+      tf.placeholder(tf.string, [None], 'filenames')
     ]
 
     # Create queue for buffering data:
-    queue = tf.FIFOQueue(8, [tf.int32, tf.int32, tf.float32, tf.float32, tf.float32], name='input_queue')
+    queue = tf.FIFOQueue(8, [tf.int32, tf.int32, tf.float32, tf.float32, tf.float32, tf.string], name='input_queue')
     self._enqueue_op = queue.enqueue(self._placeholders)
-    self.inputs, self.input_lengths, self.mel_targets, self.linear_targets, self.stop_token_targets = queue.dequeue()
+    self.inputs, self.input_lengths, self.mel_targets, self.linear_targets, self.stop_token_targets, self.filenames = queue.dequeue()
     self.inputs.set_shape(self._placeholders[0].shape)
     self.input_lengths.set_shape(self._placeholders[1].shape)
     self.mel_targets.set_shape(self._placeholders[2].shape)
     self.linear_targets.set_shape(self._placeholders[3].shape)
     self.stop_token_targets.set_shape(self._placeholders[4].shape)
+    self.filenames.set_shape(self._placeholders[5].shape)
 
     # Load CMUDict: If enabled, this will randomly substitute some words in the training data with
     # their ARPABet equivalents, which will allow you to also pass ARPABet to the model for
@@ -89,13 +91,15 @@ class DataFeeder(threading.Thread):
     examples = [self._get_next_example() for i in range(n * _batches_per_group)]
 
     # Bucket examples based on similar output sequence length for efficiency:
-    examples.sort(key=lambda x: x[-1])
+    examples.sort(key=lambda x: x[-2])
     batches = [examples[i:i+n] for i in range(0, len(examples), n)]
     random.shuffle(batches)
 
     log('Generated %d batches of size %d in %.03f sec' % (len(batches), n, time.time() - start))
     for batch in batches:
       feed_dict = dict(zip(self._placeholders, _prepare_batch(batch, r)))
+      # print(feed_dict)
+
       self._session.run(self._enqueue_op, feed_dict=feed_dict)
 
 
@@ -115,7 +119,7 @@ class DataFeeder(threading.Thread):
     linear_target = np.load(os.path.join(self._datadir, meta[0]))
     mel_target = np.load(os.path.join(self._datadir, meta[1]))
     stop_token_target = np.asarray([0.] * len(mel_target))
-    return (input_data, mel_target, linear_target, stop_token_target, len(linear_target))
+    return (input_data, mel_target, linear_target, stop_token_target, len(linear_target),meta[-1])
 
 
   def _maybe_get_arpabet(self, word):
@@ -130,7 +134,9 @@ def _prepare_batch(batch, outputs_per_step):
   mel_targets = _prepare_targets([x[1] for x in batch], outputs_per_step)
   linear_targets = _prepare_targets([x[2] for x in batch], outputs_per_step)
   stop_token_targets = _prepare_stop_token_targets([x[3] for x in batch], outputs_per_step)
-  return (inputs, input_lengths, mel_targets, linear_targets, stop_token_targets)
+  # filenames = np.asarray([x[5] for x in batch], dtype=np.str)
+  filenames = [x[5] for x in batch]
+  return (inputs, input_lengths, mel_targets, linear_targets, stop_token_targets, filenames)
 
 
 def _prepare_inputs(inputs):

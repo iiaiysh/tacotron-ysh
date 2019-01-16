@@ -15,7 +15,7 @@ class Tacotron():
     self._hparams = hparams
 
 
-  def initialize(self, inputs, input_lengths, mel_targets=None, linear_targets=None, stop_token_targets=None, global_step=None):
+  def initialize(self, inputs, input_lengths, filenames, mel_targets=None, linear_targets=None, stop_token_targets=None, global_step=None):
     '''Initializes the model for inference.
 
     Sets "mel_outputs", "linear_outputs", and "alignments" fields.
@@ -98,6 +98,7 @@ class Tacotron():
       self.linear_targets = linear_targets
       self.stop_token_targets = stop_token_targets
       self.alignimage = tf.expand_dims(tf.expand_dims(alignments[0], 0),-1)
+      self.filenames = filenames
       log('Initialized Tacotron model. Dimensions: ')
       log('  embedding:               {}'.format(embedded_inputs.shape))
       log('  prenet out:              {}'.format(prenet_outputs.shape))
@@ -107,6 +108,7 @@ class Tacotron():
       log('  postnet out:             {}'.format(post_outputs.shape))
       log('  linear out:              {}'.format(linear_outputs.shape))
       log('  stop token out:          {}'.format(stop_token_outputs.shape))
+      log('  filenames:               {}'.format(filenames.shape))
       # log('  stop token targets:      {}'.format(stop_token_targets.shape))
 
   def add_loss(self):
