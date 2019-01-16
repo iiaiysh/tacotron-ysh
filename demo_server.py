@@ -19,7 +19,7 @@ button[disabled] {opacity: 0.4; cursor: default}
 </style>
 <body>
 <form>
-  <input id="text" type="text" size="40" placeholder="Enter Text">
+  <input id="text" type="text" size="160" placeholder="Enter Text">
   <button id="button" name="synthesize">Speak</button>
 </form>
 <p id="message"></p>
@@ -74,14 +74,14 @@ class SynthesisResource:
 synthesizer = Synthesizer()
 api = falcon.API()
 api.add_route('/synthesize', SynthesisResource())
-api.add_route('/', UIResource())
+api.add_route('/demo', UIResource())
 
 
 if __name__ == '__main__':
   from wsgiref import simple_server
   parser = argparse.ArgumentParser()
   parser.add_argument('--checkpoint', required=True, help='Full path to model checkpoint')
-  parser.add_argument('--port', type=int, default=9000)
+  parser.add_argument('--port', type=int, default=8080)
   parser.add_argument('--hparams', default='',
     help='Hyperparameter overrides as a comma-separated list of name=value pairs')
   args = parser.parse_args()
