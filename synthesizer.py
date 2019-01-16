@@ -1,7 +1,7 @@
 import io
 import numpy as np
 import tensorflow as tf
-from hparams import hparams
+from hparams import hparams,hparams_debug_string
 from librosa import effects
 from models import create_model
 from text import text_to_sequence
@@ -10,6 +10,7 @@ from util import audio
 
 class Synthesizer:
   def __init__(self,model_name='tacotron',reuse=False):
+    print(hparams_debug_string())
     print('Constructing model: %s' % model_name)
     inputs = tf.placeholder(tf.int32, [1, None], 'inputs')
     input_lengths = tf.placeholder(tf.int32, [1], 'input_lengths')
