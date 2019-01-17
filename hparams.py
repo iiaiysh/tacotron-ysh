@@ -18,8 +18,8 @@ hparams = tf.contrib.training.HParams(
   ref_level_db=20,
   max_frame_num=1000,
   max_abs_value = 4,
-  fmin = 55, # for male, set 55/ female:125
-  fmax = 3600, # for male, set 3600/ female:7600
+  fmin = 45, # for male, set 55/ female:125/Tony 45
+  fmax = 11200, # for male, set 3600/ female:7600/Tony 11200
 
   # Model:
   outputs_per_step=5,
@@ -37,7 +37,7 @@ hparams = tf.contrib.training.HParams(
   reg_weight = 1e-6,
   initial_learning_rate=0.001,
   decay_learning_rate=True,
-  use_cmudict=False,  # Use CMUDict during training to learn pronunciation of ARPAbet phonemes
+  use_cmudict=True,  # Use CMUDict during training to learn pronunciation of ARPAbet phonemes
 
   # Eval:
   max_iters=400,
