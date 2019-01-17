@@ -147,9 +147,11 @@ def train(log_dir, args):
           log('   Saving checkpoint to: %s-%d' % (checkpoint_path, step))
           saver.save(sess, checkpoint_path, global_step=step)
           log('   Saving audio and alignment...')
-          input_seq, spectrogram, alignment, filename = sess.run([model.inputs[0], model.linear_outputs[0], model.alignments[0],model.filenames[0]])
+          input_seq, spectrogram, alignment, filename,spectrogram_target = sess.run([model.inputs[0], model.linear_outputs[0], model.alignments[0],model.filenames[0]],model.linear_targets[0])
           waveform = audio.inv_spectrogram(spectrogram.T)
           audio.save_wav(waveform, os.path.join(log_dir, 'step-%d-audio-train.wav' % step))
+          waveform_target = audio.inv_spectrogram(spectrogram_target.T)
+          audio.save_wav(waveform_target, os.path.join(log_dir, 'step-%d-audio-target.wav' % step))
           filename = str(filename)
           filename = filename[2:-1]
           log('   Input file: %s' % filename)
